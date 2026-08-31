@@ -17,9 +17,26 @@ Reverse-engineering / rebuild project for the SayoDevice web configurator (as us
 
 See `/Users/marcu/claude_notes/2026-09-01-sayodevice-clone-recon.md` for full recon notes.
 
+## Repo layout
+- `site_clone/` - full static download of the web app (protocol reference only).
+- `capture/2026-09-01-*.md` - raw HID captures + decoded protocol (keys, LED, rotary, templates).
+- `sayo_protocol.py` - proven protocol core. `uv run sayo_protocol.py` runs the offline self-test.
+- `tools/crack_checksum.py` - checksum reverse-engineering script.
+
+## Protocol summary (all captured/confirmed)
+Device VID `0x8089` / PID `0x0008`, config usage page `0xFF11`, report id `0x21`, 63-byte payload.
+Frame `12 [chk16-LE] [cmd] [payload]`; cmd `0x3c`=write, `0x04`=read, `0x06`=save.
+Bindings addressed by Key ID (byte6): keys=0,1,2 (class `0x09` keyboard, usage@27);
+rotary press=3 / CW=4 / CCW=5 (class `0x03` media, code@27). LED: selector `00 11`, RGB@27/28/29.
+Checksum = 16-bit LE word-sum, handled by template + word-delta (see sayo_protocol.py). Details and
+full write templates in `capture/2026-09-01-device-and-templates.md`.
+
 ## Status
 - [x] Site cloned
 - [x] Architecture + protocol recon
-- [ ] Scope decision for the Python rebuild
-- [ ] Live HID capture of target actions
-- [ ] `hidapi` connect prototype
+- [x] Scope decided: 3 keys + LED + rotary (FiiO KB1 / CM_F1)
+- [x] Live HID capture of all target actions
+- [x] Protocol core built + self-test (10/10 real frames reproduced exactly)
+- [ ] Live `hidapi` hardware write test (LED=green) - user OK'd, not yet run
+- [ ] easygui app (remap keys / rotary / LED / branded profile / save)
+- [ ] Branding/injokes decision from user (build placeholders if none)
