@@ -1,0 +1,55 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>KB1 WebHID test</title>
+<style>
+body{font:15px system-ui,sans-serif;margin:24px;background:#fff;color:#111}
+button{font-size:15px;padding:8px 14px;margin:4px 4px 4px 0}
+pre{background:#f2f2f2;padding:10px;white-space:pre-wrap}
+</style></head><body>
+<h2>FiiO KB1 WebHID test</h2>
+<pre id="env"></pre>
+<button id="connect">1. Connect keypad</button>
+<button id="green" disabled>2. LED green</button>
+<button id="blue" disabled>3. LED blue</button>
+<pre id="log"></pre>
+<script>
+// Known-good captured frames (see sayo_protocol.py self-test). No SAVE frame is sent.
+var FRAMES = {
+  green: "12 85 ab 3c 00 11 03 01 00 00 00 40 1f 6c 07 e8 03 e8 03 f4 01 00 00 42 00 64 64 00 ff 00 02",
+  blue:  "12 84 ad 3c 00 11 03 01 00 00 00 40 1f 6c 07 e8 03 e8 03 f4 01 00 00 42 00 64 64 00 00 ff 02"
+};
+var dev = null;
+function log(s){ document.getElementById("log").textContent += s + "\n"; }
+function frame(hex){
+  var b = new Uint8Array(63);
+  hex.split(" ").forEach(function(x, i){ b[i] = parseInt(x, 16); });
+  return b;
+}
+document.getElementById("env").textContent =
+  "protocol: " + location.protocol + "\norigin: " + location.origin +
+  "\nisSecureContext: " + window.isSecureContext +
+  "\nnavigator.hid present: " + ("hid" in navigator);
+
+document.getElementById("connect").onclick = async function(){
+  try {
+    var devs = await navigator.hid.requestDevice({filters: [{vendorId: 0x8089, productId: 0x0008, usagePage: 0xFF11}]});
+    if (!devs.length) { log("No device chosen."); return; }
+    dev = devs[0];
+    if (!dev.opened) await dev.open();
+    log("Opened: " + dev.productName);
+    dev.addEventListener("inputreport", function(e){
+      var a = Array.from(new Uint8Array(e.data.buffer)).slice(0, 16)
+        .map(function(x){ return x.toString(16).padStart(2, "0"); }).join(" ");
+      log("in  report " + e.reportId.toString(16) + ": " + a + " ...");
+    });
+    document.getElementById("green").disabled = false;
+    document.getElementById("blue").disabled = false;
+  } catch (e) { log("Connect error: " + e.name + ": " + e.message); }
+};
+async function send(name){
+  try { await dev.sendReport(0x21, frame(FRAMES[name])); log("Sent LED " + name); }
+  catch (e) { log("Send error: " + e.name + ": " + e.message); }
+}
+document.getElementById("green").onclick = function(){ send("green"); };
+document.getElementById("blue").onclick = function(){ send("blue"); };
+</script>
+</body></html>
