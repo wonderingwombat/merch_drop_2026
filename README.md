@@ -46,3 +46,6 @@ full write templates in `capture/2026-09-01-device-and-templates.md`.
   `isSecureContext: false`, `navigator.hid` missing. **`data:` URLs cannot use WebHID.** Dead end.
 - The cloned Flutter app (25 MB) would never fit a data URL anyway (Chrome caps URLs at 2 MB).
 - Next: test the same page opened as a local `file://` and/or served over HTTPS.
+- Direction (user, 2026-10-18): likes the idea of a **small single-page WebHID configurator**
+  (3 keys + rotary + LED, ~20-50 KB) instead of the cloned Flutter app. Parked for now.
+  Open question: does it run from `file://`, or does it need HTTPS hosting? (keypad was unplugged during the first test)
