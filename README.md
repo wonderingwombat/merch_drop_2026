@@ -40,3 +40,9 @@ full write templates in `capture/2026-09-01-device-and-templates.md`.
 - [ ] Live `hidapi` hardware write test (LED=green) - user OK'd, not yet run
 - [ ] easygui app (remap keys / rotary / LED / branded profile / save)
 - [ ] Branding/injokes decision from user (build placeholders if none)
+
+## Browser-only (WebHID) experiments
+- 2026-10-18: `tools/webhid_test.html` as a base64 `data:` URL in Chrome: `origin: null`,
+  `isSecureContext: false`, `navigator.hid` missing. **`data:` URLs cannot use WebHID.** Dead end.
+- The cloned Flutter app (25 MB) would never fit a data URL anyway (Chrome caps URLs at 2 MB).
+- Next: test the same page opened as a local `file://` and/or served over HTTPS.
