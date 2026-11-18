@@ -40,9 +40,16 @@ Local dev (also a secure context): `python3 -m http.server 8100` from the repo r
 Device VID `0x8089` / PID `0x0008`, config usage page `0xFF11`, report id `0x21`, 63-byte payload.
 Frame `12 [chk16-LE] [cmd] [payload]`; cmd `0x3c`=write, `0x04`=read, `0x06`=save.
 Bindings addressed by Key ID (byte6): keys=0,1,2 (class `0x09` keyboard, usage@27);
-rotary press=3 / CW=4 / CCW=5 (class `0x03` media, code@27). LED: selector `00 11`, RGB@27/28/29.
-Checksum = 16-bit LE word-sum, handled by template + word-delta (see sayo_protocol.py). Details and
-full write templates in `capture/2026-09-01-device-and-templates.md`.
+rotary press=3 / CW=4 / CCW=5 (class `0x03` media, code@27). LED: selector `00 11`, RGB@27/28/29,
+light/dark duration@25/26, **light-mode effect@byte30**. Checksum = 16-bit LE word-sum, handled by
+template + word-delta (see sayo_protocol.py). Details and full write templates in
+`capture/2026-09-01-device-and-templates.md`.
+
+**LED light-mode enum (frame byte 30)** — recovered from the app's effect map (`A.bw([...])`):
+`0 static · 1 indicator · 2 breathing · 3 breathing_once · 4 wave · 6 switch · 7 switch_once ·
+8 blink · 9 blink_once · 14 fade_out · 15 fade_in`. **breathing=2 is confirmed** (the captured LED
+frame's byte 30 is `0x02`); the rest are anchored to that map but not yet tested on hardware. Colour
+Mode (static vs rainbow/hue) is a separate field at byte 23 (`0x42` = static colour in the capture).
 
 **Hardware-confirmed corrections (2026-11-17, via `docs/index.html` on the real unit):**
 - Rotary direction is the reverse of the capture labels: physical **clockwise fires id 5**,

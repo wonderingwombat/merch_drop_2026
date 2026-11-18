@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SPRINT MODE ON — Keypad Configurator</title>
+<title>Unmand Keypad Configurator</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -52,16 +54,21 @@
     background:var(--panel); position:sticky; top:0; z-index:10;
   }
   .logo{
-    width:40px; height:40px; border-radius:10px; flex:0 0 auto;
-    background:var(--brand); color:var(--accent);
-    display:grid; place-items:center; font-size:22px;
-    box-shadow:0 2px 10px rgba(46,125,240,.4);
+    width:48px; height:48px; border-radius:12px; flex:0 0 auto; position:relative;
+    background:#ffffff;                 /* white tile so the blue Unmand mark reads in both themes */
+    display:grid; place-items:center;
   }
+  .logo img{width:34px; height:34px; display:block}
+  /* ⚡ overlapping the bottom-right of the logo mark */
+  .logo .bolt{position:absolute; right:4px; bottom:2px; font-size:20px; line-height:1;
+    pointer-events:none; filter:drop-shadow(0 1px 1px rgba(0,0,0,.15))}
   .brand h1{
-    font-size:19px; margin:0; font-style:italic; font-weight:800;
-    letter-spacing:.6px; color:var(--text);
+    font-size:19px; margin:0; font-weight:800;
+    letter-spacing:.3px; color:var(--text);
   }
-  .brand p{font-size:12px; margin:2px 0 0; color:var(--muted); font-weight:600; letter-spacing:.3px}
+  /* the "SPRINT MODE ON" merch tagline keeps the sporty italic slant */
+  .brand p{font-size:12px; margin:2px 0 0; color:var(--muted); font-weight:600;
+    font-style:italic; letter-spacing:.3px}
   .spacer{flex:1}
 
   main{max-width:1060px; margin:24px auto; padding:0 20px;
@@ -129,6 +136,26 @@
   .howto-foot code{background:var(--panel-2); border:1px solid var(--line);
     border-radius:5px; padding:1px 6px; font-family:var(--mono); font-size:11px}
 
+  /* How-to modal */
+  .modal-overlay{position:fixed; inset:0; z-index:100; padding:20px;
+    display:none; align-items:center; justify-content:center;
+    background:rgba(8,12,20,.55); backdrop-filter:blur(2px)}
+  .modal-overlay.open{display:flex; animation:fade .15s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .modal{background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    width:100%; max-width:520px; max-height:85vh; overflow:auto; padding:22px 24px 24px;
+    box-shadow:0 24px 70px rgba(0,0,0,.4)}
+  .modal-head{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:6px}
+  .modal-head h2{font-size:18px; margin:0; color:var(--text); text-transform:none; letter-spacing:0; line-height:1.3}
+  .modal-intro{font-size:13.5px; color:var(--muted); margin:4px 0 16px; line-height:1.55}
+  .modal-intro b{color:var(--text)}
+  .modal-close{flex:0 0 auto; width:32px; height:32px; padding:0; font-size:15px; line-height:1;
+    border-radius:8px; background:var(--panel-2); border:1px solid var(--line); color:var(--muted)}
+  .modal-close:hover{color:var(--text); border-color:var(--brand)}
+  /* header buttons share one size so they line up exactly */
+  #guidebtn, #themebtn{height:36px; padding:0 12px; font-size:13px; line-height:1;
+    display:inline-flex; align-items:center; gap:6px}
+
   /* connection banner / empty-state */
   .banner{display:flex; align-items:center; gap:10px; margin-top:14px; padding:12px 14px;
     border-radius:10px; font-size:13px; border:1px solid var(--line); line-height:1.45}
@@ -176,7 +203,7 @@
   .swatch.active{outline:2px solid var(--text); outline-offset:2px}
 
   /* header icon button (theme toggle) */
-  #themebtn{padding:6px 11px; font-size:15px; line-height:1}
+  #themebtn{font-size:15px}      /* emoji a touch larger; height/padding inherited above */
 
   .log-head{display:flex; align-items:center; justify-content:space-between; gap:10px}
   .log-head h2{margin:0}
@@ -197,12 +224,16 @@
 <body>
 
 <header>
-  <div class="logo">⚡</div>
+  <div class="logo">
+    <img src="unmand_blue-logo.svg" alt="Unmand" width="28" height="28">
+    <span class="bolt" aria-hidden="true">⚡</span>
+  </div>
   <div class="brand">
-    <h1>SPRINT MODE ON</h1>
-    <p>UNMAND DEV TEAM 26&rsquo; MERCH &middot; Keypad Configurator</p>
+    <h1>Unmand Keypad Configurator</h1>
+    <p>SPRINT MODE ON &middot; Unmand Dev Team &rsquo;26 Merch Drop</p>
   </div>
   <div class="spacer"></div>
+  <button id="guidebtn" title="How to use this configurator">📖 Guide</button>
   <button id="themebtn" title="Toggle light / dark" aria-label="Toggle light or dark theme">🌙</button>
   <span id="status" class="pill off">Disconnected</span>
 </header>
@@ -222,14 +253,6 @@
         <button id="selftest"
           title="Rebuild the captured reference frames and check they still match byte-for-byte. No device needed.">Run self-test</button>
       </div>
-      <p class="howto-title">⚡ How to use</p>
-      <ol class="howto">
-        <li><b>Connect</b> — plug in your keypad, click <b>Connect keypad</b>, and approve the browser prompt.</li>
-        <li><b>Bind each control</b> — click <b>Record key</b> and press the key you want (hold <b>⌘ / ⇧ / ⌥ / ⌃</b> for a modifier),
-          or open <i>Or assign a media control</i> to pick volume, play/pause, etc.</li>
-        <li><b>Write it</b> — click <b>Apply all + Save</b> to store everything on the device so it survives unplugging.</li>
-      </ol>
-      <p class="howto-foot">Requires Chrome or Edge served over <code>localhost</code> or HTTPS.</p>
       <div id="connbanner" class="banner off">
         <span class="dot"></span>
         <span id="conntext"></span>
@@ -252,15 +275,31 @@
     </div>
 
     <div class="card">
-      <h2>LED &mdash; Breathing / Static Colour</h2>
+      <h2>LED</h2>
       <div class="ledrow">
         <input type="color" id="led" value="#00ff00" aria-label="LED colour" disabled>
         <button id="ledapply" disabled
-          title="Send the current LED colour and breathing timings to the device now.">Apply</button>
+          title="Send the current LED colour, mode and timings to the device now.">Apply</button>
         <span class="hint" id="ledval">#00ff00</span>
       </div>
       <div class="swatches" id="swatches"></div>
       <div class="grid" style="margin-top:14px">
+        <div class="row">
+          <label class="k" for="ledmode">Light mode</label>
+          <select id="ledmode" disabled title="LED effect. Only Breathing is hardware-confirmed; the rest are experimental.">
+            <option value="breathing">Breathing (confirmed)</option>
+            <option value="static">Static / solid colour</option>
+            <option value="indicator">Indicator</option>
+            <option value="breathing_once">Breathing once</option>
+            <option value="wave">Wave</option>
+            <option value="switch">Switch</option>
+            <option value="switch_once">Switch once</option>
+            <option value="blink">Blink</option>
+            <option value="blink_once">Blink once</option>
+            <option value="fade_out">Fade out</option>
+            <option value="fade_in">Fade in</option>
+          </select>
+        </div>
         <div class="row">
           <label class="k" for="lightdur">Light duration</label>
           <input type="number" id="lightdur" min="0" max="255" value="100" disabled>
@@ -270,9 +309,10 @@
           <input type="number" id="darkdur" min="0" max="255" value="100" disabled>
         </div>
       </div>
-      <p class="hint">Only the captured <b>Breathing / Static Colour</b> mode is confirmed.
-        Light&nbsp;Mode, Colour&nbsp;Mode, Speed, Trigger&nbsp;Event, Fn&nbsp;layers and per-key
-        lighting need protocol capture &mdash; see notes.</p>
+      <p class="hint"><b>Breathing</b> is hardware-confirmed. The other light modes were recovered
+        from the app's effect map (written to frame&nbsp;byte&nbsp;30) but are <b>experimental</b> &mdash;
+        try them with the keypad connected and check the result. Colour&nbsp;Mode (rainbow/hue),
+        Speed, Trigger&nbsp;Event, Fn&nbsp;layers and per-key lighting still need protocol capture.</p>
     </div>
 
     <div class="card">
@@ -306,6 +346,28 @@
   </aside>
 </main>
 
+<!-- How-to guide modal: auto-opens on first visit, reopened via the topbar "? Guide" button -->
+<div class="modal-overlay" id="guidemodal" role="dialog" aria-modal="true" aria-labelledby="guidetitle" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="guidetitle">🎉 Welcome to the Unmand &rsquo;26 Merch Drop</h2>
+      <button class="modal-close" id="guideclose" title="Close" aria-label="Close guide">✕</button>
+    </div>
+    <p class="modal-intro">Say hello to your <b>Unmand Keypad</b> &mdash; <i>Sprint Mode: On</i>. ⚡<br>
+      The racing theme is a nod to our move to sprint-style working this year. 🏁<br>
+      This configurator makes it yours: remap the three keys, set what the dial does, and dial in
+      your LED glow. Takes about a minute &mdash; here&rsquo;s how:</p>
+    <ol class="howto">
+      <li><b>Connect</b> — plug in your keypad, click <b>Connect keypad</b>, and approve the browser prompt.</li>
+      <li><b>Bind each control</b> — click <b>Record key</b> and press the key you want (hold <b>⌘ / ⇧ / ⌥ / ⌃</b> for a modifier),
+        or open <i>Or assign a media control</i> to pick volume, play/pause, etc.</li>
+      <li><b>Write it</b> — click <b>Apply all + Save</b> to store everything on the device so it survives unplugging.</li>
+    </ol>
+    <p class="howto-foot">Requires Chrome or Edge served over <code>localhost</code> or HTTPS.
+      Reopen this guide any time from <b>? Guide</b> in the top bar.</p>
+  </div>
+</div>
+
 <script>
 /* ===================================================================
    PROTOCOL CORE  - ported byte-for-byte from sayo_protocol.py
@@ -319,6 +381,7 @@ const FRAME_LEN = 63;
 const OFF_CLASS = 23, OFF_VALUE = 27, OFF_MODIFIER = 28;
 const OFF_LED_R = 27, OFF_LED_G = 28, OFF_LED_B = 29;
 const OFF_LIGHT_DUR = 25, OFF_DARK_DUR = 26;   // confirmed: 0-255 breathing timings
+const OFF_LIGHT_MODE = 30;                      // effect mode (captured frame = 0x02 = breathing)
 const CLASS_KEYBOARD = 0x09, CLASS_MEDIA = 0x03;
 
 function hx(s){
@@ -336,6 +399,19 @@ const TEMPLATES = {
   5: hx("12 ae 53 3c 00 10 05 01 01 00 00 52 1c 6c 07 dc 05 b8 0b dc 05 00 00 03 00 00 00 0c 00 00 00 03"),
 };
 const LED_TEMPLATE = hx("12 84 ad 3c 00 11 03 01 00 00 00 40 1f 6c 07 e8 03 e8 03 f4 01 00 00 42 00 64 64 00 00 ff 02");
+
+// LED "Light Mode" effect enum (frame byte 30). Recovered from the app's effect map.
+// breathing=2 is CONFIRMED — it matches the captured frame's byte 30 (0x02). The rest are
+// anchored to that same map but UNVERIFIED on hardware — treat as experimental.
+const LED_MODES = {
+  breathing:2, static:0, indicator:1, breathing_once:3, wave:4,
+  switch:6, switch_once:7, blink:8, blink_once:9, fade_out:14, fade_in:15,
+};
+const LED_MODE_LABEL = {
+  breathing:"Breathing (confirmed)", static:"Static / solid colour", indicator:"Indicator",
+  breathing_once:"Breathing once", wave:"Wave", switch:"Switch", switch_once:"Switch once",
+  blink:"Blink", blink_once:"Blink once", fade_out:"Fade out", fade_in:"Fade in",
+};
 const SAVE_FRAME   = hx("12 ca 84 06 00 0d 00 96 72");
 
 const KEY_IDS = [0,1,2];
@@ -425,11 +501,12 @@ function buildKeyBinding(keyId, value, klass, mod = 0){
 }
 const buildKeyboard = (id, name) => buildKeyBinding(id, KEYBOARD_USAGES[name], CLASS_KEYBOARD);
 const buildMedia    = (id, name) => buildKeyBinding(id, MEDIA_CODES[name],    CLASS_MEDIA);
-function buildLedRgb(r, g, b, lightDur, darkDur){
+function buildLedRgb(r, g, b, lightDur, darkDur, mode = 0x02){
   const f = LED_TEMPLATE.slice();
   f[OFF_LED_R] = r & 0xFF; f[OFF_LED_G] = g & 0xFF; f[OFF_LED_B] = b & 0xFF;
   if (lightDur != null) f[OFF_LIGHT_DUR] = lightDur & 0xFF;
   if (darkDur  != null) f[OFF_DARK_DUR]  = darkDur  & 0xFF;
+  f[OFF_LIGHT_MODE] = mode & 0xFF;              // default 0x02 = breathing (matches captures)
   applyChecksum(f, LED_TEMPLATE);
   return f;
 }
@@ -510,6 +587,7 @@ function setConnected(on){
   $("applyall").disabled = !on;
   $("led").disabled = !on;
   $("ledapply").disabled = !on;
+  $("ledmode").disabled = !on;
   $("lightdur").disabled = !on;
   $("darkdur").disabled = !on;
 
@@ -543,14 +621,14 @@ const DEFAULTS = {
   3:{type:"media",name:"play/pause"}, 4:{type:"media",name:""}, 5:{type:"media",name:""},
 };
 const clone = o => structuredClone(o);
-const state = { slot: clone(DEFAULTS), led:"#00ff00", lightDur:100, darkDur:100 };
+const state = { slot: clone(DEFAULTS), led:"#00ff00", lightDur:100, darkDur:100, ledMode:"breathing" };
 
 /* ---- local persistence: remember the working config across page reloads ----
    (purely browser-side; nothing is written to the device until Apply/Save). */
 const LS_KEY = "sprintmode.keypad.v1";
 function saveState(){
   try{ localStorage.setItem(LS_KEY, JSON.stringify(
-    { slot:state.slot, led:state.led, lightDur:state.lightDur, darkDur:state.darkDur })); }
+    { slot:state.slot, led:state.led, lightDur:state.lightDur, darkDur:state.darkDur, ledMode:state.ledMode })); }
   catch(_){ /* storage disabled / private mode — ignore */ }
 }
 function loadState(){
@@ -561,6 +639,7 @@ function loadState(){
     if (d.led)  state.led  = d.led;
     if (d.lightDur != null) state.lightDur = clampByte(Number(d.lightDur));
     if (d.darkDur  != null) state.darkDur  = clampByte(Number(d.darkDur));
+    if (d.ledMode && LED_MODES[d.ledMode] != null) state.ledMode = d.ledMode;
     return true;
   }catch(_){ return false; }
 }
@@ -581,6 +660,22 @@ $("themebtn").onclick = () => {
   drawViz();
 };
 
+/* ---- how-to guide modal: auto-open on first visit, reopen via topbar button ---- */
+const GUIDE_KEY = "sprintmode.guideSeen";
+const guideModal = $("guidemodal");
+function openGuide(){ guideModal.hidden = false; guideModal.classList.add("open"); }
+function closeGuide(){
+  guideModal.classList.remove("open"); guideModal.hidden = true;
+  try{ localStorage.setItem(GUIDE_KEY, "1"); }catch(_){}
+}
+$("guidebtn").onclick = openGuide;
+$("guideclose").onclick = closeGuide;
+guideModal.addEventListener("click", e => { if (e.target === guideModal) closeGuide(); });  // backdrop
+window.addEventListener("keydown", e => {
+  if (e.key === "Escape" && guideModal.classList.contains("open")) closeGuide();
+});
+if (!localStorage.getItem(GUIDE_KEY)) openGuide();   // first visit only
+
 function buildSlotFrame(id){
   const { type, name, mods } = state.slot[id];
   const klass = type === "media" ? CLASS_MEDIA : CLASS_KEYBOARD;
@@ -595,7 +690,7 @@ function buildLedFrame(){
     Number.parseInt(v.slice(1,3),16),
     Number.parseInt(v.slice(3,5),16),
     Number.parseInt(v.slice(5,7),16),
-    state.lightDur, state.darkDur);
+    state.lightDur, state.darkDur, LED_MODES[state.ledMode] ?? 0x02);
 }
 
 /* ---- friendly labels ---- */
@@ -739,12 +834,18 @@ window.addEventListener("keyup", e => {
 function syncLedInputs(){
   $("led").value = state.led; $("ledval").textContent = state.led;
   $("lightdur").value = state.lightDur; $("darkdur").value = state.darkDur;
+  $("ledmode").value = state.ledMode;
 }
 $("led").addEventListener("input", e => {
   state.led = e.target.value; $("ledval").textContent = e.target.value; renderSwatches(); drawViz(); saveState();
 });
 $("lightdur").addEventListener("input", e => { state.lightDur = clampByte(Number(e.target.value)); saveState(); });
 $("darkdur").addEventListener("input",  e => { state.darkDur  = clampByte(Number(e.target.value)); saveState(); });
+$("ledmode").addEventListener("change", e => {
+  state.ledMode = e.target.value; saveState();
+  const exp = state.ledMode !== "breathing" ? " — experimental, verify on device" : "";
+  log(`LED mode → ${LED_MODE_LABEL[state.ledMode] || state.ledMode}${exp}. Click Apply to write.`, "ok");
+});
 
 /* ---- LED preset swatches (team palette + common colours) ---- */
 const LED_PRESETS = [
@@ -768,7 +869,7 @@ function renderSwatches(){
   }));
 }
 $("ledapply").onclick = () =>
-  send(buildLedFrame(), `led ${state.led} dur ${state.lightDur}/${state.darkDur}`);
+  send(buildLedFrame(), `led ${state.led} ${state.ledMode} dur ${state.lightDur}/${state.darkDur}`);
 
 /* ---- apply all + save ---- */
 $("applyall").onclick = async () => {
@@ -783,7 +884,7 @@ $("applyall").onclick = async () => {
 /* ---- profiles (export/import JSON) ---- */
 $("export").onclick = () => {
   const data = { app:"keypad-configurator", v:1,
-                 slot:state.slot, led:state.led, lightDur:state.lightDur, darkDur:state.darkDur };
+                 slot:state.slot, led:state.led, lightDur:state.lightDur, darkDur:state.darkDur, ledMode:state.ledMode };
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)], {type:"application/json"}));
   a.download = "keypad-profile.json";
@@ -799,6 +900,7 @@ $("importfile").addEventListener("change", async e => {
     if (d.led) state.led = d.led;
     if (d.lightDur != null) state.lightDur = clampByte(Number(d.lightDur));
     if (d.darkDur  != null) state.darkDur  = clampByte(Number(d.darkDur));
+    if (d.ledMode && LED_MODES[d.ledMode] != null) state.ledMode = d.ledMode;
     renderSlots(); syncLedInputs(); renderSwatches(); drawViz(); saveState();
     log("Imported profile — click 'Apply all + Save' to write it.", "ok");
   }catch(err){ log("Import failed: " + err.message, "er"); }
@@ -807,7 +909,7 @@ $("importfile").addEventListener("change", async e => {
 
 /* ---- reset ---- */
 $("reset").onclick = () => {
-  state.slot = clone(DEFAULTS); state.led = "#00ff00"; state.lightDur = 100; state.darkDur = 100;
+  state.slot = clone(DEFAULTS); state.led = "#00ff00"; state.lightDur = 100; state.darkDur = 100; state.ledMode = "breathing";
   renderSlots(); syncLedInputs(); renderSwatches(); drawViz(); saveState();
   log("Reset to captured defaults — click 'Apply all + Save' to write.", "ok");
 };
