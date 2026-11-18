@@ -22,6 +22,19 @@ See `/Users/marcu/claude_notes/2026-09-01-sayodevice-clone-recon.md` for full re
 - `capture/2026-09-01-*.md` - raw HID captures + decoded protocol (keys, LED, rotary, templates).
 - `sayo_protocol.py` - proven protocol core. `uv run sayo_protocol.py` runs the offline self-test.
 - `tools/crack_checksum.py` - checksum reverse-engineering script.
+- `docs/index.html` - the single-page WebHID keypad configurator (keys, dial, LED, modifiers,
+  profiles). Served via **GitHub Pages** from the `docs/` folder. `docs/.nojekyll` disables Jekyll.
+
+## Hosting the configurator (GitHub Pages)
+The configurator needs **HTTPS** (WebHID is blocked on plain `http://` and `file://`). GitHub Pages
+provides that for free:
+1. Push to GitHub, then in the repo: **Settings → Pages → Source: "Deploy from a branch" →
+   Branch `master`, folder `/docs` → Save.**
+2. Wait ~1 min; the page goes live at **https://wonderingwombat.github.io/merch_drop_2026/**
+   (Chrome/Edge only — WebHID isn't in Safari/Firefox).
+
+Local dev (also a secure context): `python3 -m http.server 8100` from the repo root, then open
+`http://localhost:8100/docs/`.
 
 ## Protocol summary (all captured/confirmed)
 Device VID `0x8089` / PID `0x0008`, config usage page `0xFF11`, report id `0x21`, 63-byte payload.
@@ -30,6 +43,14 @@ Bindings addressed by Key ID (byte6): keys=0,1,2 (class `0x09` keyboard, usage@2
 rotary press=3 / CW=4 / CCW=5 (class `0x03` media, code@27). LED: selector `00 11`, RGB@27/28/29.
 Checksum = 16-bit LE word-sum, handled by template + word-delta (see sayo_protocol.py). Details and
 full write templates in `capture/2026-09-01-device-and-templates.md`.
+
+**Hardware-confirmed corrections (2026-11-17, via `docs/index.html` on the real unit):**
+- Rotary direction is the reverse of the capture labels: physical **clockwise fires id 5**,
+  counter-clockwise fires id 4. The configurator's SLOT_DEFS is keyed to this real behaviour.
+- **No brightness support.** The device's media enum is exactly `hidmedia_Mute`(8)…`hidmedia_WWWFavorites`(30)
+  — 30 codes, no brightness. The official app's entire bindable set is only `hidkey` (keyboard usages),
+  these 30 `hidmedia` codes, and `mouseKey`; the sole non-standard key is `hidkey_Power`. Brightness
+  (HID Consumer 0x6F/0x70) is not emittable by this firmware — don't re-attempt it.
 
 ## Status
 - [x] Site cloned

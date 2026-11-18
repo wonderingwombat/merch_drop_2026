@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPRINT MODE ON — Keypad Configurator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ---------------------------------------------------------------- BRAND TOKENS
+     Rebrand the whole app by editing just these few variables. No Material,
+     no framework - plain HTML/CSS/JS drawn with your own styles. */
+  :root{
+    /* SPRINT MODE ON — Unmand Dev Team 26' racing palette (light) */
+    --brand:        #2E7DF0;   /* Sprint blue */
+    --brand-ink:    #ffffff;   /* text on the blue */
+    --accent:       #FACC15;   /* lightning yellow */
+    --accent-ink:   #0F172A;   /* text on the yellow */
+    --bg:           #EDF2F7;   /* light slate background */
+    --panel:        #ffffff;
+    --panel-2:      #F1F5F9;
+    --line:         #D4DCE6;
+    --text:         #0F172A;
+    --muted:        #64748B;
+    --ok:           #1a9e5f;
+    --err:          #d93a3f;
+    --radius:       14px;
+    --font:         "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono:         ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  /* SPRINT MODE ON — dark variant. Only the palette changes; every component
+     reads these tokens, so the whole app re-themes from here. */
+  :root[data-theme="dark"]{
+    --bg:        #0B1220;
+    --panel:     #131A28;
+    --panel-2:   #1B2436;
+    --line:      #2A3650;
+    --text:      #E6EDF7;
+    --muted:     #8A99B3;
+    --ok:        #34D399;
+    --err:       #F87171;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:var(--font); background:var(--bg); color:var(--text);
+    line-height:1.5; padding:0 0 60px;
+  }
+  header{
+    display:flex; align-items:center; gap:14px; padding:16px 22px;
+    border-bottom:1px solid var(--line); border-top:3px solid var(--accent);
+    background:var(--panel); position:sticky; top:0; z-index:10;
+  }
+  .logo{
+    width:40px; height:40px; border-radius:10px; flex:0 0 auto;
+    background:var(--brand); color:var(--accent);
+    display:grid; place-items:center; font-size:22px;
+    box-shadow:0 2px 10px rgba(46,125,240,.4);
+  }
+  .brand h1{
+    font-size:19px; margin:0; font-style:italic; font-weight:800;
+    letter-spacing:.6px; color:var(--text);
+  }
+  .brand p{font-size:12px; margin:2px 0 0; color:var(--muted); font-weight:600; letter-spacing:.3px}
+  .spacer{flex:1}
+
+  main{max-width:1060px; margin:24px auto; padding:0 20px;
+    display:grid; grid-template-columns:1fr 360px; gap:20px; align-items:start}
+  .controls{display:grid; gap:20px; min-width:0}
+  .side{position:sticky; top:84px; display:grid; gap:20px}
+  @media(max-width:820px){
+    main{grid-template-columns:1fr}
+    .side{position:static}
+  }
+  canvas#viz{width:100%; height:auto; display:block; border-radius:10px;
+    background:linear-gradient(160deg,#0c0d10,#191c22); border:1px solid var(--line)}
+  .card{
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:var(--radius); padding:18px 20px;
+  }
+  .card h2{font-size:13px; text-transform:uppercase; letter-spacing:.8px;
+    color:var(--muted); margin:0 0 14px}
+  .grid{display:grid; gap:12px}
+  .row{display:grid; grid-template-columns:120px 1fr; align-items:center; gap:12px}
+  @media(max-width:520px){.row{grid-template-columns:1fr}}
+  label.k{font-size:13px; color:var(--muted)}
+  /* record-style slot cards */
+  #keys, #rotary{gap:10px}
+  .slot{
+    border:1px solid var(--line); border-radius:12px; padding:10px 14px;
+    background:var(--panel-2); display:grid; gap:6px; transition:border-color .15s, box-shadow .15s;
+  }
+  .slot.recording{border-color:var(--accent); box-shadow:0 0 0 2px rgba(250,204,21,.3)}
+  .slot-main{display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+  .slot-head{display:flex; align-items:baseline; gap:8px}
+  .slot-name{font-weight:700; font-size:15px}
+  .slot-desc{font-size:12px; color:var(--muted)}
+  .chip{
+    display:inline-flex; align-items:center; min-height:32px; padding:3px 13px;
+    border-radius:8px; background:var(--panel); border:1px solid var(--line);
+    font-weight:700; font-size:14px;
+  }
+  .chip.empty{color:var(--muted); font-weight:500; font-style:italic}
+  .slot-actions{display:flex; gap:8px; flex-wrap:wrap; margin-left:auto}
+  .slot-actions button{padding:7px 14px}
+  button.rec.listening{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);
+    animation:pulse 1.1s ease-in-out infinite}
+  @keyframes pulse{50%{opacity:.6}}
+  .media-fold summary{cursor:pointer; font-size:12px; color:var(--muted); user-select:none}
+  .media-fold summary:hover{color:var(--text)}
+  .media-btns{display:flex; flex-wrap:wrap; gap:7px; margin-top:10px}
+  .media-btns button{padding:7px 11px; font-size:12px; font-weight:500}
+  .media-btns button.active{background:var(--brand); color:var(--brand-ink); border-color:var(--brand)}
+  .card-desc{font-size:13px; color:var(--muted); margin:-6px 0 14px}
+
+  /* "How to use" — numbered steps */
+  .howto-title{font-size:13px; font-weight:700; color:var(--text);
+    margin:16px 0 0; display:flex; align-items:center; gap:7px}
+  .howto{margin:12px 0 0; padding:0; list-style:none; counter-reset:step; display:grid; gap:10px}
+  .howto > li{position:relative; padding-left:34px; font-size:13px; color:var(--muted); line-height:1.5}
+  .howto > li::before{
+    counter-increment:step; content:counter(step);
+    position:absolute; left:0; top:-1px; width:23px; height:23px; border-radius:50%;
+    background:var(--brand); color:var(--brand-ink); font-weight:700; font-size:12px;
+    display:grid; place-items:center;
+  }
+  .howto b{color:var(--text)}
+  .howto-foot{font-size:12px; color:var(--muted); margin:13px 0 0}
+  .howto-foot code{background:var(--panel-2); border:1px solid var(--line);
+    border-radius:5px; padding:1px 6px; font-family:var(--mono); font-size:11px}
+
+  /* connection banner / empty-state */
+  .banner{display:flex; align-items:center; gap:10px; margin-top:14px; padding:12px 14px;
+    border-radius:10px; font-size:13px; border:1px solid var(--line); line-height:1.45}
+  .banner .dot{width:9px; height:9px; border-radius:50%; flex:0 0 auto}
+  .banner.off{background:rgba(229,72,77,.07); border-color:rgba(229,72,77,.3)}
+  .banner.off .dot{background:var(--err)}
+  .banner.on{background:rgba(56,193,114,.08); border-color:rgba(56,193,114,.35)}
+  .banner.on .dot{background:var(--ok); box-shadow:0 0 0 3px rgba(56,193,114,.2)}
+
+  select, button, input[type=color]{font:inherit}
+  select{
+    width:100%; padding:9px 11px; border-radius:9px; color:var(--text);
+    background:var(--panel-2); border:1px solid var(--line); appearance:none;
+  }
+  select:focus{outline:2px solid var(--brand); outline-offset:1px}
+  input[type=number]{
+    width:100%; padding:9px 11px; border-radius:9px; color:var(--text);
+    background:var(--panel-2); border:1px solid var(--line);
+  }
+  input[type=number]:focus{outline:2px solid var(--brand); outline-offset:1px}
+
+  button{
+    cursor:pointer; border:1px solid var(--line); background:var(--panel-2);
+    color:var(--text); padding:9px 16px; border-radius:9px; font-weight:600;
+  }
+  button:hover{border-color:var(--brand)}
+  button.primary{background:var(--brand); color:var(--brand-ink); border-color:var(--brand)}
+  button:disabled{opacity:.45; cursor:not-allowed}
+  .btnrow{display:flex; gap:10px; flex-wrap:wrap}
+
+  .pill{font-size:12px; padding:4px 10px; border-radius:999px;
+    background:var(--panel-2); border:1px solid var(--line); color:var(--muted)}
+  .pill.on{color:var(--ok); border-color:var(--ok)}
+  .pill.off{color:var(--err); border-color:var(--err)}
+
+  .ledrow{display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+  input[type=color]{width:54px; height:38px; padding:0; border:1px solid var(--line);
+    border-radius:9px; background:var(--panel-2)}
+
+  /* LED preset swatches */
+  .swatches{display:flex; gap:9px; flex-wrap:wrap; margin-top:14px}
+  .swatch{width:28px; height:28px; border-radius:8px; border:1px solid var(--line);
+    cursor:pointer; padding:0; transition:transform .1s}
+  .swatch:hover{transform:scale(1.1); border-color:var(--text)}
+  .swatch.active{outline:2px solid var(--text); outline-offset:2px}
+
+  /* header icon button (theme toggle) */
+  #themebtn{padding:6px 11px; font-size:15px; line-height:1}
+
+  .log-head{display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .log-head h2{margin:0}
+  #logclear{padding:5px 12px; font-size:12px; font-weight:600}
+  #log{
+    font-family:var(--mono); font-size:12px; white-space:pre-wrap; word-break:break-all;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:10px;
+    padding:12px 14px; margin-top:12px; max-height:220px; overflow:auto; color:var(--muted);
+  }
+  #log .tx{color:var(--text)}
+  #log .ok{color:var(--ok)}
+  #log .er{color:var(--err)}
+  #log:empty::before{content:"Activity will appear here."; color:var(--muted)}
+  .hint{font-size:12px; color:var(--muted); margin-top:10px}
+  a{color:var(--brand)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚡</div>
+  <div class="brand">
+    <h1>SPRINT MODE ON</h1>
+    <p>UNMAND DEV TEAM 26&rsquo; MERCH &middot; Keypad Configurator</p>
+  </div>
+  <div class="spacer"></div>
+  <button id="themebtn" title="Toggle light / dark" aria-label="Toggle light or dark theme">🌙</button>
+  <span id="status" class="pill off">Disconnected</span>
+</header>
+
+<main>
+  <div class="controls">
+    <div class="card">
+      <div class="btnrow">
+        <button id="connect" class="primary"
+          title="Open the browser's device picker and connect to your keypad over WebHID (needs localhost or HTTPS).">Connect keypad</button>
+        <button id="applyall" disabled
+          title="Write every key, dial and LED setting to the device, then save so it survives unplugging. Always matches what's on screen — use this after importing a profile.">Apply all + Save</button>
+        <button id="save" disabled
+          title="Commit the device's current live settings to permanent storage. Writes nothing new — just makes the latest changes stick after unplugging.">Save to device</button>
+        <button id="preview"
+          title="Dry run: log the exact bytes Apply all + Save would send. Works with no device connected.">Preview frames</button>
+        <button id="selftest"
+          title="Rebuild the captured reference frames and check they still match byte-for-byte. No device needed.">Run self-test</button>
+      </div>
+      <p class="howto-title">⚡ How to use</p>
+      <ol class="howto">
+        <li><b>Connect</b> — plug in your keypad, click <b>Connect keypad</b>, and approve the browser prompt.</li>
+        <li><b>Bind each control</b> — click <b>Record key</b> and press the key you want (hold <b>⌘ / ⇧ / ⌥ / ⌃</b> for a modifier),
+          or open <i>Or assign a media control</i> to pick volume, play/pause, etc.</li>
+        <li><b>Write it</b> — click <b>Apply all + Save</b> to store everything on the device so it survives unplugging.</li>
+      </ol>
+      <p class="howto-foot">Requires Chrome or Edge served over <code>localhost</code> or HTTPS.</p>
+      <div id="connbanner" class="banner off">
+        <span class="dot"></span>
+        <span id="conntext"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Keys</h2>
+      <p class="card-desc">The three physical keys. Click <b>Record key</b>, then press any key to bind it.
+        Tap <b>⌘ / ⇧ / ⌥ / ⌃</b> on its own for a dedicated modifier key, or hold a modifier and press a key
+        for a combo like <b>⌘C</b> (combos are experimental). Or expand <i>media control</i> for volume, play/pause, etc.</p>
+      <div class="grid" id="keys"></div>
+    </div>
+
+    <div class="card">
+      <h2>Rotary dial</h2>
+      <p class="card-desc">What the dial does when pushed in or turned. Media controls (volume, track skip)
+        are the usual choice, but you can record a keyboard key too.</p>
+      <div class="grid" id="rotary"></div>
+    </div>
+
+    <div class="card">
+      <h2>LED &mdash; Breathing / Static Colour</h2>
+      <div class="ledrow">
+        <input type="color" id="led" value="#00ff00" aria-label="LED colour" disabled>
+        <button id="ledapply" disabled
+          title="Send the current LED colour and breathing timings to the device now.">Apply</button>
+        <span class="hint" id="ledval">#00ff00</span>
+      </div>
+      <div class="swatches" id="swatches"></div>
+      <div class="grid" style="margin-top:14px">
+        <div class="row">
+          <label class="k" for="lightdur">Light duration</label>
+          <input type="number" id="lightdur" min="0" max="255" value="100" disabled>
+        </div>
+        <div class="row">
+          <label class="k" for="darkdur">Dark duration</label>
+          <input type="number" id="darkdur" min="0" max="255" value="100" disabled>
+        </div>
+      </div>
+      <p class="hint">Only the captured <b>Breathing / Static Colour</b> mode is confirmed.
+        Light&nbsp;Mode, Colour&nbsp;Mode, Speed, Trigger&nbsp;Event, Fn&nbsp;layers and per-key
+        lighting need protocol capture &mdash; see notes.</p>
+    </div>
+
+    <div class="card">
+      <h2>Profile</h2>
+      <div class="btnrow">
+        <button id="export"
+          title="Download the whole config (keys, dial, LED) as a JSON file you can share or back up.">Export profile</button>
+        <button id="import"
+          title="Load a config from a JSON file into the controls. Click Apply all + Save afterwards to write it to the device.">Import profile</button>
+        <button id="reset"
+          title="Restore the captured default bindings and LED. Click Apply all + Save afterwards to write them.">Reset to defaults</button>
+        <input type="file" id="importfile" accept="application/json" aria-label="Import profile JSON file" hidden>
+      </div>
+      <p class="hint">Save the whole config (keys, dial, LED) to a JSON file, or load one.
+        Import updates the controls; click <b>Apply all + Save</b> to write it to the device.</p>
+    </div>
+  </div>
+
+  <aside class="side">
+    <div class="card">
+      <h2>Device</h2>
+      <canvas id="viz" width="340" height="205"></canvas>
+    </div>
+    <div class="card">
+      <div class="log-head">
+        <h2>Log</h2>
+        <button id="logclear" title="Clear the activity log below.">Clear log</button>
+      </div>
+      <div id="log"></div>
+    </div>
+  </aside>
+</main>
+
+<script>
+/* ===================================================================
+   PROTOCOL CORE  - ported byte-for-byte from sayo_protocol.py
+   (reverse-engineered SayoDevice / FiiO KB1 HID protocol).
+   =================================================================== */
+const VID = 0x8089, PID = 0x0008;
+const CONFIG_USAGE_PAGE = 0xFF11;
+const REPORT_ID = 0x21;
+const FRAME_LEN = 63;
+
+const OFF_CLASS = 23, OFF_VALUE = 27, OFF_MODIFIER = 28;
+const OFF_LED_R = 27, OFF_LED_G = 28, OFF_LED_B = 29;
+const OFF_LIGHT_DUR = 25, OFF_DARK_DUR = 26;   // confirmed: 0-255 breathing timings
+const CLASS_KEYBOARD = 0x09, CLASS_MEDIA = 0x03;
+
+function hx(s){
+  const b = s.trim().split(/\s+/).map(x => Number.parseInt(x,16));
+  while (b.length < FRAME_LEN) b.push(0);
+  return b;
+}
+
+const TEMPLATES = {
+  0: hx("12 1a 3c 3c 00 10 00 01 00 00 00 ba 13 6c 07 08 07 08 07 64 00 00 00 09 00 00 00 06 00 00 00 03"),
+  1: hx("12 ad 35 3c 00 10 01 01 00 00 00 4e 0c 6c 07 08 07 08 07 64 00 00 00 09 00 00 00 05 00 00 00 03"),
+  2: hx("12 40 2f 3c 00 10 02 01 00 00 00 e2 04 6c 07 08 07 08 07 64 00 00 00 09 00 00 00 04 00 00 00 03"),
+  3: hx("12 f0 45 3c 00 10 03 01 00 00 00 40 1f 6c 07 e8 03 e8 03 f4 01 00 00 03 00 00 00 0c 00 00 00 03"),
+  4: hx("12 8a 59 3c 00 10 04 01 02 00 00 2e 22 6c 07 dc 05 b8 0b dc 05 00 00 03 00 00 00 0c 00 00 00 03"),
+  5: hx("12 ae 53 3c 00 10 05 01 01 00 00 52 1c 6c 07 dc 05 b8 0b dc 05 00 00 03 00 00 00 0c 00 00 00 03"),
+};
+const LED_TEMPLATE = hx("12 84 ad 3c 00 11 03 01 00 00 00 40 1f 6c 07 e8 03 e8 03 f4 01 00 00 42 00 64 64 00 00 ff 02");
+const SAVE_FRAME   = hx("12 ca 84 06 00 0d 00 96 72");
+
+const KEY_IDS = [0,1,2];
+const ROTARY = { 3:"Press", 4:"Clockwise", 5:"Counter-clockwise" };
+
+const KEYBOARD_USAGES = {};
+"abcdefghijklmnopqrstuvwxyz".split("").forEach((c,i)=>KEYBOARD_USAGES[c]=0x04+i);
+"1234567890".split("").forEach((c,i)=>KEYBOARD_USAGES[c]=0x1E+i);
+Object.assign(KEYBOARD_USAGES, {
+  "enter":0x28,"esc":0x29,"backspace":0x2A,"tab":0x2B,"space":0x2C,
+  "-":0x2D,"=":0x2E,"[":0x2F,"]":0x30,"\\":0x31,";":0x33,"'":0x34,
+  "`":0x35,",":0x36,".":0x37,"/":0x38,"capslock":0x39,
+  "f1":0x3A,"f2":0x3B,"f3":0x3C,"f4":0x3D,"f5":0x3E,"f6":0x3F,
+  "f7":0x40,"f8":0x41,"f9":0x42,"f10":0x43,"f11":0x44,"f12":0x45,
+  "right":0x4F,"left":0x50,"down":0x51,"up":0x52,
+  // standalone modifier keys (HID usages 0xE0–0xE7). Binding a key to one of
+  // these makes it act as that modifier (e.g. a dedicated ⌘ or ⇧ key). Confirmed-safe:
+  // same keyboard class/value field as every other usage above.
+  "lctrl":0xE0,"lshift":0xE1,"lalt":0xE2,"lcmd":0xE3,
+  "rctrl":0xE4,"rshift":0xE5,"ralt":0xE6,"rcmd":0xE7,
+});
+
+// HID modifier bitmask (byte 28) for key+modifier COMBOS like ⌘C. Left-side bits.
+// EXPERIMENTAL: the single-key frames we captured always have byte 28 = 0x00, so
+// standalone keys/modifiers are proven, but the combo encoding (modifier in b28)
+// is a best-effort guess — verify on hardware via Preview / a live test.
+const MOD_ORDER = [
+  { bit:0x01, sym:"⌃", mac:"Control" },   // Left Control
+  { bit:0x04, sym:"⌥", mac:"Option"  },   // Left Alt / Option
+  { bit:0x02, sym:"⇧", mac:"Shift"   },   // Left Shift
+  { bit:0x08, sym:"⌘", mac:"Command" },   // Left GUI / Command
+];
+const modsToSymbols = mask => MOD_ORDER.filter(m => mask & m.bit).map(m => m.sym).join("");
+function eventMods(e){
+  let m = 0;
+  if (e.ctrlKey)  m |= 0x01;
+  if (e.shiftKey) m |= 0x02;
+  if (e.altKey)   m |= 0x04;
+  if (e.metaKey)  m |= 0x08;
+  return m;
+}
+// bare-modifier keydown → the standalone modifier usage name it binds to
+const MOD_CODE_TO_NAME = {
+  ControlLeft:"lctrl", ControlRight:"rctrl", ShiftLeft:"lshift", ShiftRight:"rshift",
+  AltLeft:"lalt", AltRight:"ralt", MetaLeft:"lcmd", MetaRight:"rcmd",
+};
+// Media/consumer enum (class 0x03, value at byte 27). Codes extracted from the app's
+// own enum (A.r(code,label)) and anchored to the captured Volume+/-/Play-Pause (0x0a/0b/0c).
+const MEDIA_CODES = {
+  "mute":0x08, "bass":0x09, "volume+":0x0A, "volume-":0x0B,
+  "play/pause":0x0C, "stop":0x0D, "previous":0x0E, "next":0x0F,
+  "bass-":0x11, "treble+":0x12, "treble-":0x13, "media select":0x14,
+  "mail":0x15, "calculator":0x16, "explorer":0x17,
+  "web search":0x18, "web home":0x19, "web back":0x1A, "web forward":0x1B,
+  "web stop":0x1C, "web refresh":0x1D, "web favorites":0x1E,
+  // NOTE: the device's media enum ends here (web favorites = 0x1E). The FiiO KB1
+  // firmware has NO brightness function — the official app exposes only keyboard
+  // keys, these 30 media codes, and mouse. Brightness (HID Consumer 0x6F/0x70)
+  // is not emittable by this hardware, so it is intentionally not offered.
+};
+
+/* ---- checksum: template base + word-delta (exact; the device checksum is a
+   linear 16-bit little-endian word-sum). ---- */
+function wordsum(f){
+  let t = 0;
+  for (let i = 3; i + 1 < FRAME_LEN; i += 2) t += f[i] | (f[i+1] << 8);
+  return t & 0xFFFF;
+}
+function tmplChk(t){ return t[1] | (t[2] << 8); }
+function applyChecksum(f, t){
+  const delta = (wordsum(f) - wordsum(t)) & 0xFFFF;
+  const chk = (tmplChk(t) + delta) & 0xFFFF;
+  f[1] = chk & 0xFF;
+  f[2] = (chk >> 8) & 0xFF;
+}
+
+function buildKeyBinding(keyId, value, klass, mod = 0){
+  const t = TEMPLATES[keyId];
+  if (!t) throw new Error("no template for key " + keyId);
+  const f = t.slice();
+  f[OFF_CLASS] = klass;
+  f[24] = f[25] = f[26] = f[27] = 0;   // zero 32-bit value field
+  f[OFF_VALUE] = value & 0xFF;
+  f[OFF_MODIFIER] = mod & 0xFF;         // b28: modifier bitmask (0 for plain keys — matches captures)
+  applyChecksum(f, t);
+  return f;
+}
+const buildKeyboard = (id, name) => buildKeyBinding(id, KEYBOARD_USAGES[name], CLASS_KEYBOARD);
+const buildMedia    = (id, name) => buildKeyBinding(id, MEDIA_CODES[name],    CLASS_MEDIA);
+function buildLedRgb(r, g, b, lightDur, darkDur){
+  const f = LED_TEMPLATE.slice();
+  f[OFF_LED_R] = r & 0xFF; f[OFF_LED_G] = g & 0xFF; f[OFF_LED_B] = b & 0xFF;
+  if (lightDur != null) f[OFF_LIGHT_DUR] = lightDur & 0xFF;
+  if (darkDur  != null) f[OFF_DARK_DUR]  = darkDur  & 0xFF;
+  applyChecksum(f, LED_TEMPLATE);
+  return f;
+}
+
+/* ===================================================================
+   UI + WebHID transport
+   =================================================================== */
+let device = null;
+const $ = id => document.getElementById(id);
+const logEl = $("log");
+
+function log(msg, cls){
+  const line = document.createElement("div");
+  if (cls) line.className = cls;
+  line.textContent = msg;
+  logEl.prepend(line);
+}
+const hexdump = f => f.map(b => b.toString(16).padStart(2,"0")).join(" ");
+$("logclear").onclick = () => { logEl.replaceChildren(); };
+
+/* raw device → host report logger (read-only; aids protocol RE) */
+function onInputReport(e){
+  const bytes = new Uint8Array(e.data.buffer);
+  log(`RX  id ${e.reportId.toString(16).padStart(2,"0")}  ${hexdump(Array.from(bytes))}`);
+}
+
+async function send(frame, label){
+  if (!device) { log("Not connected.", "er"); return; }
+  try{
+    await device.sendReport(REPORT_ID, new Uint8Array(frame));
+    log("TX " + (label || "") + "  21 " + hexdump(frame), "tx");
+  }catch(e){
+    log("TX FAILED: " + e.message, "er");
+  }
+}
+
+/* ---- device connect ---- */
+$("connect").onclick = async () => {
+  if (!("hid" in navigator)) {
+    log("WebHID unavailable. Use Chrome/Edge over localhost or HTTPS.", "er");
+    return;
+  }
+  try{
+    const picked = await navigator.hid.requestDevice({
+      filters: [{ vendorId: VID, productId: PID }]
+    });
+    if (!picked.length) { log("No device selected.", "er"); return; }
+    // prefer the vendor config interface (usagePage 0xFF11)
+    device = picked.find(d => d.collections.some(c => c.usagePage === CONFIG_USAGE_PAGE))
+             || picked[0];
+    if (!device.opened) await device.open();
+    // Passively log anything the device sends back (button reports, command
+    // responses). Read-only — useful for further protocol reverse-engineering.
+    device.addEventListener("inputreport", onInputReport);
+    setConnected(true);
+    log("Connected: " + device.productName, "ok");
+  }catch(e){
+    log("Connect failed: " + e.message, "er");
+  }
+};
+
+// reflect physical unplug in the UI
+if ("hid" in navigator){
+  navigator.hid.addEventListener("disconnect", e => {
+    if (device && e.device === device){
+      device = null;
+      setConnected(false);
+      log("Keypad disconnected.", "er");
+    }
+  });
+}
+
+function setConnected(on){
+  const s = $("status");
+  s.textContent = on ? "Connected" : "Disconnected";
+  s.className = "pill " + (on ? "on" : "off");
+  $("save").disabled = !on;
+  $("applyall").disabled = !on;
+  $("led").disabled = !on;
+  $("ledapply").disabled = !on;
+  $("lightdur").disabled = !on;
+  $("darkdur").disabled = !on;
+
+  const banner = $("connbanner");
+  banner.className = "banner " + (on ? "on" : "off");
+  $("conntext").innerHTML = on
+    ? `Connected to <b>${device?.productName || "keypad"}</b>. Changes send live &mdash; click <b>Apply all + Save</b> to store them on the device.`
+    : `No keypad connected. Click <b>Connect keypad</b> to begin &mdash; you can set bindings now and they'll be written once you connect and click <b>Apply all + Save</b>.`;
+}
+
+function clampByte(v){ return Math.max(0, Math.min(255, Math.trunc(v) || 0)); }
+
+/* ---- save ---- */
+$("save").onclick = () => send(SAVE_FRAME, "SAVE");
+
+/* ---- slot model: each key AND each dial action binds keyboard OR media ---- */
+// NOTE: physical left→right order is Key IDs 2,1,0 (the outer keys are reversed
+// relative to the device's internal IDs), so Key 1 = id 2 and Key 3 = id 0.
+const SLOT_DEFS = [
+  { id:2, group:"keys",   label:"Key 1", desc:"Left key" },
+  { id:1, group:"keys",   label:"Key 2", desc:"Middle key" },
+  { id:0, group:"keys",   label:"Key 3", desc:"Right key" },
+  { id:3, group:"rotary", label:"Press", desc:"Push the dial in" },
+  // Physical direction confirmed on hardware: clockwise fires id 5, CCW fires id 4
+  // (opposite of the original capture's labels). Kept keyed to real-world behaviour.
+  { id:5, group:"rotary", label:"Turn right", desc:"Rotate the dial clockwise" },
+  { id:4, group:"rotary", label:"Turn left", desc:"Rotate the dial counter-clockwise" },
+];
+const DEFAULTS = {
+  0:{type:"keyboard",name:"c"}, 1:{type:"keyboard",name:"b"}, 2:{type:"keyboard",name:"a"},
+  3:{type:"media",name:"play/pause"}, 4:{type:"media",name:""}, 5:{type:"media",name:""},
+};
+const clone = o => structuredClone(o);
+const state = { slot: clone(DEFAULTS), led:"#00ff00", lightDur:100, darkDur:100 };
+
+/* ---- local persistence: remember the working config across page reloads ----
+   (purely browser-side; nothing is written to the device until Apply/Save). */
+const LS_KEY = "sprintmode.keypad.v1";
+function saveState(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(
+    { slot:state.slot, led:state.led, lightDur:state.lightDur, darkDur:state.darkDur })); }
+  catch(_){ /* storage disabled / private mode — ignore */ }
+}
+function loadState(){
+  try{
+    const d = JSON.parse(localStorage.getItem(LS_KEY) || "null");
+    if (!d) return false;
+    if (d.slot) state.slot = d.slot;
+    if (d.led)  state.led  = d.led;
+    if (d.lightDur != null) state.lightDur = clampByte(Number(d.lightDur));
+    if (d.darkDur  != null) state.darkDur  = clampByte(Number(d.darkDur));
+    return true;
+  }catch(_){ return false; }
+}
+
+/* ---- theme (light / dark), also persisted ---- */
+const THEME_KEY = "sprintmode.theme";
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  $("themebtn").textContent = t === "dark" ? "☀️" : "🌙";
+}
+let theme = localStorage.getItem(THEME_KEY)
+  || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+applyTheme(theme);
+$("themebtn").onclick = () => {
+  theme = theme === "dark" ? "light" : "dark";
+  try{ localStorage.setItem(THEME_KEY, theme); }catch(_){}
+  applyTheme(theme);
+  drawViz();
+};
+
+function buildSlotFrame(id){
+  const { type, name, mods } = state.slot[id];
+  const klass = type === "media" ? CLASS_MEDIA : CLASS_KEYBOARD;
+  if (!name) return buildKeyBinding(id, 0x00, klass);
+  const val = (type === "media" ? MEDIA_CODES : KEYBOARD_USAGES)[name];
+  const mod = (type === "keyboard" && mods) ? mods : 0;   // combos only
+  return buildKeyBinding(id, val, klass, mod);
+}
+function buildLedFrame(){
+  const v = state.led;
+  return buildLedRgb(
+    Number.parseInt(v.slice(1,3),16),
+    Number.parseInt(v.slice(3,5),16),
+    Number.parseInt(v.slice(5,7),16),
+    state.lightDur, state.darkDur);
+}
+
+/* ---- friendly labels ---- */
+const MEDIA_DISPLAY = {
+  "mute":"🔇 Mute", "bass":"♪ Bass", "volume+":"🔊 Volume +", "volume-":"🔉 Volume −",
+  "play/pause":"⏯ Play / Pause", "stop":"⏹ Stop", "previous":"⏮ Previous", "next":"⏭ Next",
+  "bass-":"♪ Bass −", "treble+":"♪ Treble +", "treble-":"♪ Treble −", "media select":"🎵 Media Select",
+  "mail":"✉ Mail", "calculator":"🖩 Calculator", "explorer":"🗂 Explorer",
+  "web search":"🔍 Web Search", "web home":"🏠 Web Home", "web back":"◀ Web Back",
+  "web forward":"▶ Web Forward", "web stop":"✕ Web Stop", "web refresh":"⟳ Web Refresh",
+  "web favorites":"★ Web Favorites",
+};
+const KEY_DISPLAY = {
+  "space":"Space","enter":"Enter","esc":"Esc","backspace":"Backspace","tab":"Tab",
+  "capslock":"Caps Lock","left":"← Left","right":"→ Right","up":"↑ Up","down":"↓ Down",
+  "lctrl":"⌃ Control","rctrl":"⌃ Control (R)","lshift":"⇧ Shift","rshift":"⇧ Shift (R)",
+  "lalt":"⌥ Option","ralt":"⌥ Option (R)","lcmd":"⌘ Command","rcmd":"⌘ Command (R)",
+};
+function bindingLabel(s){
+  if (!s.name) return "Not set";
+  if (s.type === "media") return MEDIA_DISPLAY[s.name] || s.name;
+  const base = KEY_DISPLAY[s.name] || s.name.toUpperCase();
+  return s.mods ? modsToSymbols(s.mods) + " " + base : base;   // combo e.g. "⌘ C"
+}
+
+/* ---- map a physical keypress (event.code) to a supported HID key name ---- */
+const CODE_TO_KEYNAME = (() => {
+  const m = {};
+  "abcdefghijklmnopqrstuvwxyz".split("").forEach(c => m["Key"+c.toUpperCase()] = c);
+  "0123456789".split("").forEach(d => m["Digit"+d] = d);
+  Object.assign(m, {
+    Enter:"enter", Escape:"esc", Backspace:"backspace", Tab:"tab", Space:"space",
+    Minus:"-", Equal:"=", BracketLeft:"[", BracketRight:"]", Backslash:"\\",
+    Semicolon:";", Quote:"'", Backquote:"`", Comma:",", Period:".", Slash:"/", CapsLock:"capslock",
+    ArrowRight:"right", ArrowLeft:"left", ArrowDown:"down", ArrowUp:"up",
+  });
+  for (let i = 1; i <= 12; i++) m["F"+i] = "f"+i;
+  return m;
+})();
+
+/* ---- render slots as record-cards ---- */
+let recordingId = null;
+
+function mediaButtons(def){
+  const s = state.slot[def.id];
+  return Object.keys(MEDIA_CODES).map(n =>
+    `<button data-id="${def.id}" data-act="media" data-media="${n}"
+       title="Bind this control to ${MEDIA_DISPLAY[n]}"
+       class="${s.type==="media"&&s.name===n?"active":""}">${MEDIA_DISPLAY[n]}</button>`
+  ).join("");
+}
+function slotCard(def){
+  const s = state.slot[def.id];
+  const rec = recordingId === def.id;
+  const card = document.createElement("div");
+  card.className = "slot" + (rec ? " recording" : "");
+  card.innerHTML = `
+    <div class="slot-main">
+      <div class="slot-head">
+        <span class="slot-name">${def.label}</span>
+        <span class="slot-desc">${def.desc}</span>
+      </div>
+      <span class="chip ${s.name?"":"empty"}">${bindingLabel(s)}</span>
+      <div class="slot-actions">
+        <button class="rec ${rec?"listening":""}" data-id="${def.id}" data-act="rec"
+          title="Click, then press the key to bind. Tap ⌘/⇧/⌥/⌃ alone for a modifier key, or hold them and press a key for a combo.">
+          ${rec ? "Press any key…" : "Record key"}
+        </button>
+        <button data-id="${def.id}" data-act="clear" title="Unbind this control (sets it to nothing).">Clear</button>
+      </div>
+    </div>
+    <details class="media-fold">
+      <summary>Or assign a media control</summary>
+      <div class="media-btns">${mediaButtons(def)}</div>
+    </details>`;
+  return card;
+}
+function renderSlots(){
+  $("keys").replaceChildren(...SLOT_DEFS.filter(d=>d.group==="keys").map(slotCard));
+  $("rotary").replaceChildren(...SLOT_DEFS.filter(d=>d.group==="rotary").map(slotCard));
+}
+
+function setSlot(id, slotObj){
+  state.slot[id] = slotObj;
+  if (recordingId === id) recordingId = null;
+  renderSlots(); drawViz(); saveState();
+  const lbl = SLOT_DEFS.find(d => d.id === id).label;
+  if (device) send(buildSlotFrame(id), `${lbl} = ${bindingLabel(slotObj)}`);
+  else log(`${lbl} → ${bindingLabel(slotObj)}  (connect, then Apply to write)`, "ok");
+}
+function toggleRecord(id){
+  recordingId = (recordingId === id) ? null : id;
+  renderSlots();
+  if (recordingId === id) log(`Recording "${SLOT_DEFS.find(d=>d.id===id).label}" — press any key.`, "ok");
+}
+function onSlotClick(e){
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  const id = +btn.dataset.id;
+  if (btn.dataset.act === "rec")        toggleRecord(id);
+  else if (btn.dataset.act === "clear") setSlot(id, { type:state.slot[id].type, name:"" });
+  else if (btn.dataset.act === "media") setSlot(id, { type:"media", name:btn.dataset.media });
+}
+$("keys").addEventListener("click", onSlotClick);
+$("rotary").addEventListener("click", onSlotClick);
+
+/* ---- global key capture while recording ----
+   • tap a modifier alone (⌘ ⇧ ⌥ ⌃)  → binds a standalone modifier key
+   • hold modifier(s) + press a key     → binds a combo (⌘C etc., experimental)
+   • press a normal key                 → binds that key                        */
+let recModPending = null;   // a bare modifier is held, awaiting keyup or a combo key
+window.addEventListener("keydown", e => {
+  if (recordingId === null) return;
+  e.preventDefault();
+  if (MOD_CODE_TO_NAME[e.code]){ recModPending = e.code; return; }  // wait and see
+  const name = CODE_TO_KEYNAME[e.code];
+  if (!name){
+    log(`"${e.key}" isn't a supported key. Try a letter, number, F-key, arrow, punctuation, Space or Enter.`, "er");
+    return;
+  }
+  recModPending = null;
+  const mods = eventMods(e);
+  if (mods){
+    setSlot(recordingId, { type:"keyboard", name, mods });
+    log(`Bound ${modsToSymbols(mods)} ${name.toUpperCase()} (combo — experimental, verify on device).`, "ok");
+  } else {
+    setSlot(recordingId, { type:"keyboard", name });
+  }
+});
+// a modifier pressed and released on its own = bind it as a standalone modifier key
+window.addEventListener("keyup", e => {
+  if (recordingId === null) return;
+  const modName = MOD_CODE_TO_NAME[e.code];
+  if (modName && recModPending === e.code){
+    recModPending = null;
+    setSlot(recordingId, { type:"keyboard", name:modName });
+  }
+});
+
+/* ---- LED ---- */
+function syncLedInputs(){
+  $("led").value = state.led; $("ledval").textContent = state.led;
+  $("lightdur").value = state.lightDur; $("darkdur").value = state.darkDur;
+}
+$("led").addEventListener("input", e => {
+  state.led = e.target.value; $("ledval").textContent = e.target.value; renderSwatches(); drawViz(); saveState();
+});
+$("lightdur").addEventListener("input", e => { state.lightDur = clampByte(Number(e.target.value)); saveState(); });
+$("darkdur").addEventListener("input",  e => { state.darkDur  = clampByte(Number(e.target.value)); saveState(); });
+
+/* ---- LED preset swatches (team palette + common colours) ---- */
+const LED_PRESETS = [
+  ["Sprint blue","#2E7DF0"], ["Lightning","#FACC15"], ["Green","#00FF00"],
+  ["Red","#FF2D2D"], ["Cyan","#00E5FF"], ["Magenta","#FF3DCB"],
+  ["Orange","#FF7A00"], ["Purple","#7C3AED"], ["White","#FFFFFF"], ["Off","#000000"],
+];
+function renderSwatches(){
+  const cur = state.led.toLowerCase();
+  $("swatches").replaceChildren(...LED_PRESETS.map(([name,hex]) => {
+    const b = document.createElement("button");
+    b.className = "swatch" + (hex.toLowerCase() === cur ? " active" : "");
+    b.style.background = hex;
+    b.title = `${name} ${hex}`;
+    b.setAttribute("aria-label", `Set LED to ${name}`);
+    b.onclick = () => {
+      state.led = hex; syncLedInputs(); renderSwatches(); drawViz(); saveState();
+      log(`LED colour → ${name} (${hex}) — click Apply to write.`, "ok");
+    };
+    return b;
+  }));
+}
+$("ledapply").onclick = () =>
+  send(buildLedFrame(), `led ${state.led} dur ${state.lightDur}/${state.darkDur}`);
+
+/* ---- apply all + save ---- */
+$("applyall").onclick = async () => {
+  if (!device){ log("Not connected.", "er"); return; }
+  // HID writes must go one at a time (sequential await is intentional, not parallel).
+  for (const d of SLOT_DEFS) await send(buildSlotFrame(d.id), d.label);
+  await send(buildLedFrame(), "LED");
+  await send(SAVE_FRAME, "SAVE");
+  log("Applied all bindings + LED, then saved.", "ok");
+};
+
+/* ---- profiles (export/import JSON) ---- */
+$("export").onclick = () => {
+  const data = { app:"keypad-configurator", v:1,
+                 slot:state.slot, led:state.led, lightDur:state.lightDur, darkDur:state.darkDur };
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)], {type:"application/json"}));
+  a.download = "keypad-profile.json";
+  a.click(); URL.revokeObjectURL(a.href);
+  log("Exported keypad-profile.json", "ok");
+};
+$("import").onclick = () => $("importfile").click();
+$("importfile").addEventListener("change", async e => {
+  const file = e.target.files[0]; if (!file) return;
+  try{
+    const d = JSON.parse(await file.text());
+    if (d.slot) state.slot = d.slot;
+    if (d.led) state.led = d.led;
+    if (d.lightDur != null) state.lightDur = clampByte(Number(d.lightDur));
+    if (d.darkDur  != null) state.darkDur  = clampByte(Number(d.darkDur));
+    renderSlots(); syncLedInputs(); renderSwatches(); drawViz(); saveState();
+    log("Imported profile — click 'Apply all + Save' to write it.", "ok");
+  }catch(err){ log("Import failed: " + err.message, "er"); }
+  e.target.value = "";                   // allow re-importing the same file
+});
+
+/* ---- reset ---- */
+$("reset").onclick = () => {
+  state.slot = clone(DEFAULTS); state.led = "#00ff00"; state.lightDur = 100; state.darkDur = 100;
+  renderSlots(); syncLedInputs(); renderSwatches(); drawViz(); saveState();
+  log("Reset to captured defaults — click 'Apply all + Save' to write.", "ok");
+};
+
+/* ---- preview frames (dry-run): show the exact bytes for the whole config
+   without needing a device. Same builders Apply all + Save uses. ---- */
+$("preview").onclick = () => {
+  log("— Preview (dry-run): bytes that Apply all + Save would send —", "ok");
+  for (const d of SLOT_DEFS)
+    log(`${d.label} = ${bindingLabel(state.slot[d.id])}\n  21 ${hexdump(buildSlotFrame(d.id))}`);
+  log(`LED ${state.led} dur ${state.lightDur}/${state.darkDur}\n  21 ${hexdump(buildLedFrame())}`);
+  log(`SAVE\n  21 ${hexdump(SAVE_FRAME)}`);
+  log("— End preview (nothing was written to the device) —", "ok");
+};
+
+/* ===================================================================
+   CANVAS  - live view of the keypad in its real one-row layout:
+   three keys and the dial side by side, body glowing the LED colour.
+   =================================================================== */
+const cv = $("viz"), ctx = cv.getContext("2d");
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const VIZ_W = 340, VIZ_H = 205;
+
+// short glyph/label for a bound action, to fit inside a keycap/dial
+const MEDIA_GLYPH = { "mute":"🔇","bass":"♪","volume+":"🔊","volume-":"🔉",
+  "play/pause":"⏯","stop":"⏹","previous":"⏮","next":"⏭",
+  "bass-":"♪","treble+":"♪","treble-":"♪","media select":"🎵",
+  "mail":"✉","calculator":"🖩","explorer":"🗂",
+  "web search":"🔍","web home":"🏠","web back":"◀","web forward":"▶",
+  "web stop":"✕","web refresh":"⟳","web favorites":"★" };
+const KEY_GLYPH = { "space":"␣","enter":"↵","backspace":"⌫","tab":"⇥","esc":"ESC","capslock":"CAPS",
+  "left":"←","right":"→","up":"↑","down":"↓",
+  "lctrl":"⌃","rctrl":"⌃","lshift":"⇧","rshift":"⇧","lalt":"⌥","ralt":"⌥","lcmd":"⌘","rcmd":"⌘" };
+function shortLabel(slot){
+  if (!slot.name) return "—";
+  if (slot.type === "media") return MEDIA_GLYPH[slot.name] || slot.name.slice(0,3).toUpperCase();
+  const base = KEY_GLYPH[slot.name] || slot.name.toUpperCase();
+  return slot.mods ? modsToSymbols(slot.mods) + base : base;
+}
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); }
+function fitFont(txt){
+  const L = txt.length;
+  if (L > 3) return 13;
+  if (L === 3) return 16;
+  if (L === 2) return 20;
+  return 24;
+}
+
+function keycap(x,y,s,txt){
+  rr(x,y,s,s,10); ctx.fillStyle="#2b303a"; ctx.fill();
+  rr(x+5,y+4,s-10,s-13,8); ctx.fillStyle="#373d49"; ctx.fill();
+  ctx.fillStyle = "#F1F5F9";
+  ctx.font = `700 ${fitFont(txt)}px Inter, system-ui`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(txt, x+s/2, y+s/2-1);
+}
+
+function drawViz(){
+  const dpr = devicePixelRatio || 1;
+  const W = cv.clientWidth || VIZ_W, H = cv.clientHeight || (W*VIZ_H/VIZ_W);
+  cv.width = W*dpr; cv.height = H*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  ctx.scale(W/VIZ_W, H/VIZ_H);          // design in a fixed 340x205 space
+
+  const accent = css("--accent") || "#FACC15";
+  // the device render is a dark "stage" regardless of page theme — use fixed light text
+  const vizText = "#F1F5F9", muted = "#94A3B8";
+
+  // device body (horizontal bar) — plain panel; the LED glow is on the dial only.
+  // Generous inset so the row + dial glow ring sit well inside the panel edges.
+  const bx = 16, by = 44, bw = 308, bh = 104, brd = 18;
+  rr(bx, by, bw, bh, brd); ctx.fillStyle = "#1a1d23"; ctx.fill();
+  rr(bx, by, bw, bh, brd); ctx.strokeStyle = "#2b3242"; ctx.lineWidth = 1.5; ctx.stroke();
+
+  ctx.fillStyle = muted; ctx.font = "600 11px Inter, system-ui";
+  ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.fillText("FiiO KB1 · CM_F1", 20, 24);
+
+  // one row: 3 keycaps + 1 dial — smaller caps + wider gaps for breathing room,
+  // vertically centred in the taller panel.
+  const s = 56, gap = 18, cyRow = by + bh/2;
+  const total = 4*s + 3*gap, startX = (VIZ_W - total) / 2, y = cyRow - s/2;
+  const centers = [0,1,2,3].map(i => startX + i*(s+gap) + s/2);
+
+  // keycaps (physical left→right order from SLOT_DEFS)
+  const keyDefs = SLOT_DEFS.filter(d => d.group === "keys");
+  keyDefs.forEach((d,i) => keycap(startX + i*(s+gap), y, s, shortLabel(state.slot[d.id])));
+
+  // dial (4th slot) = rotary; the RGB LED is here — glowing ring in the LED colour
+  const cx = centers[3], cy = cyRow, r = s/2;
+  const g = ctx.createRadialGradient(cx-r*0.35, cy-r*0.35, r*0.2, cx, cy, r);
+  g.addColorStop(0,"#3a4150"); g.addColorStop(1,"#20242c");
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle = g; ctx.fill();
+  // LED glow ring around the dial
+  ctx.save();
+  ctx.shadowColor = state.led; ctx.shadowBlur = 12;
+  ctx.strokeStyle = state.led; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(cx, cy, r+1, 0, Math.PI*2); ctx.stroke(); ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle = accent; ctx.lineWidth = 4; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(cx, cy-r+8); ctx.lineTo(cx, cy-r+20); ctx.stroke();
+  const pressTxt = shortLabel(state.slot[3]);
+  ctx.fillStyle = vizText; ctx.font = `700 ${fitFont(pressTxt)}px Inter, system-ui`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(pressTxt, cx, cy+2);
+
+  // captions under the panel (below the body, not overlapping it)
+  ctx.fillStyle = muted; ctx.font = "600 10px Inter, system-ui"; ctx.textBaseline = "alphabetic";
+  [...keyDefs.map(d => d.label.toUpperCase()), "DIAL"]
+    .forEach((t,i) => ctx.fillText(t, centers[i], by + bh + 18));
+
+  ctx.restore();
+}
+
+const restored = loadState();  // bring back the last working config, if any
+renderSlots();
+syncLedInputs();
+renderSwatches();
+setConnected(false);          // paint the initial disconnected empty-state
+addEventListener("resize", drawViz);
+drawViz();
+if (restored) log("Restored your last saved config (local).", "ok");
+
+/* ===================================================================
+   SELF-TEST  - reproduces captured ground-truth frames, no device needed.
+   Proves the JS port matches sayo_protocol.py exactly.
+   =================================================================== */
+$("selftest").onclick = () => {
+  const GT = [
+    ["key0=C",  "12 1a 3c 3c 00 10 00 01 00 00 00 ba 13 6c 07 08 07 08 07 64 00 00 00 09 00 00 00 06 00 00 00 03", ()=>buildKeyboard(0,"c")],
+    ["key1=B",  "12 ad 35 3c 00 10 01 01 00 00 00 4e 0c 6c 07 08 07 08 07 64 00 00 00 09 00 00 00 05 00 00 00 03", ()=>buildKeyboard(1,"b")],
+    ["key2=A",  "12 40 2f 3c 00 10 02 01 00 00 00 e2 04 6c 07 08 07 08 07 64 00 00 00 09 00 00 00 04 00 00 00 03", ()=>buildKeyboard(2,"a")],
+    ["key2=clr","12 3c 2f 3c 00 10 02 01 00 00 00 e2 04 6c 07 08 07 08 07 64 00 00 00 09 00 00 00 00 00 00 00 03", ()=>buildKeyBinding(2,0x00,CLASS_KEYBOARD)],
+    ["key1=clr","12 a8 35 3c 00 10 01 01 00 00 00 4e 0c 6c 07 08 07 08 07 64 00 00 00 09 00 00 00 00 00 00 00 03", ()=>buildKeyBinding(1,0x00,CLASS_KEYBOARD)],
+    ["key0=clr","12 14 3c 3c 00 10 00 01 00 00 00 ba 13 6c 07 08 07 08 07 64 00 00 00 09 00 00 00 00 00 00 00 03", ()=>buildKeyBinding(0,0x00,CLASS_KEYBOARD)],
+    ["rot5=p/p","12 ae 53 3c 00 10 05 01 01 00 00 52 1c 6c 07 dc 05 b8 0b dc 05 00 00 03 00 00 00 0c 00 00 00 03", ()=>buildMedia(5,"play/pause")],
+    ["led_red", "12 84 ad 3c 00 11 03 01 00 00 00 40 1f 6c 07 e8 03 e8 03 f4 01 00 00 42 00 64 64 ff 00 00 02", ()=>buildLedRgb(0xFF,0,0)],
+    ["led_grn", "12 85 ab 3c 00 11 03 01 00 00 00 40 1f 6c 07 e8 03 e8 03 f4 01 00 00 42 00 64 64 00 ff 00 02", ()=>buildLedRgb(0,0xFF,0)],
+    ["led_blu", "12 84 ad 3c 00 11 03 01 00 00 00 40 1f 6c 07 e8 03 e8 03 f4 01 00 00 42 00 64 64 00 00 ff 02", ()=>buildLedRgb(0,0,0xFF)],
+  ];
+  let ok = 0;
+  for (const [name, exp, build] of GT){
+    const e = hx(exp), g = build();
+    let match = true;
+    for (let i = 0; i < 32; i++) if (e[i] !== g[i]) { match = false; break; }
+    if (match){ ok++; log("PASS " + name + "  chk=0x" + (g[1]|g[2]<<8).toString(16).padStart(4,"0"), "ok"); }
+    else       log("FAIL " + name, "er");
+  }
+  log(`${ok}/${GT.length} frames reproduced exactly.`, ok===GT.length ? "ok" : "er");
+};
+</script>
+</body>
+</html>
